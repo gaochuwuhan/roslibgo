@@ -59,16 +59,16 @@ func NewService(ros *Ros, name string, serviceType string) *Service {
 	return &service
 }
 
-func (service *Service) Call(request json.RawMessage) (json.RawMessage, error) {
+func (service *Service) Call(request json.RawMessage) (json.RawMessage, bool, error) {
 	err := service.call(request)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	ros := service.ros
 	ros.createMessage(ServiceResponseOp, service.name)
 	defer ros.destroyMessage(ServiceResponseOp, service.name)
 	v, _ := ros.retrieveMessage(ServiceResponseOp, service.name)
-	return v.(*ServiceResponse).Values, nil
+	return v.(*ServiceResponse).Values, v.(*ServiceResponse).Result, nil
 }
 
 func (service *Service) Advertise(callback ServiceCallback) error {
