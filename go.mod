@@ -1,4 +1,4 @@
-module github.com/otamajakusi/roslibgo
+module github.com/gaochuwuhan/roslibgo
 
 go 1.13
 
