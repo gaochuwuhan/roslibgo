@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/otamajakusi/roslibgo"
+	"github.com/gaochuwuhan/roslibgo"
 	//"github.com/pkg/profile"
 	"sync"
 	"time"
@@ -47,7 +47,7 @@ func main() {
 	//defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
 	var wg sync.WaitGroup
 
-	ros, _ := roslibgo.NewRos("ws://localhost:9090")
+	ros, _ := roslibgo.NewRos("ws://192.168.90.2:9090")
 	ros.Run()
 
 	// srv := roslibgo.NewService(ros, "/x", "std_srvs/SetBool")
@@ -69,8 +69,6 @@ func main() {
 
 	suba := roslibgo.NewTopic(ros, "/a", "std_msgs/String")
 	suba.Subscribe(callbackA)
-	subb := roslibgo.NewTopic(ros, "/b", "std_msgs/String")
-	subb.Subscribe(callbackB)
 
 	pubLoop := func(name string, str string) func() {
 		pub := roslibgo.NewTopic(ros, name, "std_msgs/String")
@@ -85,10 +83,14 @@ func main() {
 			wg.Done()
 		}
 	}
+
 	a := pubLoop("/a", "hoge")
 	b := pubLoop("/b", "fuga")
 	wg.Add(1)
 	go a()
+	time.Sleep(5 * time.Second)
+	subb := roslibgo.NewTopic(ros, "/b", "std_msgs/String")
+	subb.Subscribe(callbackB)
 	wg.Add(1)
 	go b()
 	wg.Wait()

@@ -38,7 +38,7 @@ func TestServiceAndCall(t *testing.T) {
 
 	serv.Advertise(servCb)
 	data, _ := json.Marshal(StdSrvs_SetBoolRequest{Data: true})
-	response, err := call.Call(json.RawMessage(data))
+	response, _, err := call.Call(json.RawMessage(data))
 	assert.Equal(t, err, nil)
 	var res StdSrvs_SetBoolResponse
 	json.Unmarshal(response, &res)

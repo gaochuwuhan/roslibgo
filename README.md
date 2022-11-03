@@ -1,4 +1,4 @@
-[![test](https://github.com/otamajakusi/roslibgo/actions/workflows/test.yaml/badge.svg)](https://github.com/otamajakusi/roslibgo/actions/workflows/test.yaml)
+[![test](https://github.com/gaochuwuhan/roslibgo/actions/workflows/test.yaml/badge.svg)](https://github.com/gaochuwuhan/roslibgo/actions/workflows/test.yaml)
 
 # roslibgo: ROS bridge client library with Go
 roslibgo is the client library to connect [rosbridge](http://wiki.ros.org/rosbridge_suite) with Go-language.
@@ -13,7 +13,7 @@ roslibgo is the client library to connect [rosbridge](http://wiki.ros.org/rosbri
 
 # Installation
 To install roslibgo
-`go get github.com/otamajakusi/roslibgo`
+`go get github.com/gaochuwuhan/roslibgo`
 
 # Example
 See [example/main.go](example/main.go)
