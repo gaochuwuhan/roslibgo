@@ -13,7 +13,7 @@ roslibgo is the client library to connect [rosbridge](http://wiki.ros.org/rosbri
 
 # Installation
 To install roslibgo
-`go get github.com/otamajakusi/roslibgo`
+`go get github.com/gaochuwuhan/roslibgo`
 
 # Example
 See [example/main.go](example/main.go)
