@@ -60,14 +60,18 @@ func NewService(ros *Ros, name string, serviceType string) *Service {
 }
 
 func (service *Service) Call(request json.RawMessage) (json.RawMessage, bool, error) {
-	err := service.call(request)
+	srv, err := service.call(request)
 	if err != nil {
 		return nil, false, err
 	}
 	ros := service.ros
-	ros.createMessage(ServiceResponseOp, service.name)
-	defer ros.destroyMessage(ServiceResponseOp, service.name)
-	v, _ := ros.retrieveMessage(ServiceResponseOp, service.name)
+	//add id to create/store/retrieve/destroy message
+	ros.createMessage(ServiceResponseOp, service.name, srv.Id)
+	defer ros.destroyMessage(ServiceResponseOp, service.name, srv.Id)
+	ros.message.mutex.Lock()
+	ch := ros.message.message[ServiceResponseOp+":"+service.name+srv.Id]
+	ros.message.mutex.Unlock()
+	v, _ := ros.retrieveMessage(ch)
 	return v.(*ServiceResponse).Values, v.(*ServiceResponse).Result, nil
 }
 
@@ -79,11 +83,13 @@ func (service *Service) Advertise(callback ServiceCallback) error {
 
 	go func() {
 		ros := service.ros
-		ros.createMessage(ServiceCallOp, service.name)
-		defer ros.destroyMessage(ServiceCallOp, service.name)
+		//TODO advertise add id(ros.counter())
+		ros.createMessage(ServiceCallOp, service.name, "advertise")
+		ch := ros.message.message[ServiceResponseOp+":"+service.name]
+		defer ros.destroyMessage(ServiceCallOp, service.name, "advertise")
 
 		for {
-			srvCall, _ := ros.retrieveMessage(ServiceCallOp, service.name)
+			srvCall, _ := ros.retrieveMessage(ch)
 			result, values := callback(srvCall.(*ServiceCall).Args)
 			id := srvCall.(*ServiceCall).Id
 			srvResp := ServiceResponse{Op: ServiceResponseOp, Id: id, Service: service.name, Values: values, Result: result}
@@ -101,11 +107,11 @@ func (service *Service) Unadvertise() error {
 	return service.ros.ws.writeJSON(srv)
 }
 
-func (service *Service) call(request json.RawMessage) error {
+func (service *Service) call(request json.RawMessage) (ServiceCall, error) {
 	ros := service.ros
 	id := fmt.Sprintf("ServiceCallOp:%s:%d", service.name, ros.incCounter())
 	srv := ServiceCall{Op: ServiceCallOp, Id: id, Service: service.name, Args: request}
-	return service.ros.ws.writeJSON(srv)
+	return srv, service.ros.ws.writeJSON(srv)
 }
 
 func (service *Service) advertise() error {

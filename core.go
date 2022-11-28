@@ -73,15 +73,15 @@ func (ros *Ros) RunForever() {
 		case "publish":
 			var message PublishMessage
 			json.Unmarshal(msg, &message)
-			ros.storeMessage(PublishOp, message.Topic, &message)
+			ros.storeMessage(PublishOp, message.Topic, message.Id, &message)
 		case "call_service":
 			var service ServiceCall
 			json.Unmarshal(msg, &service)
-			ros.storeMessage(ServiceCallOp, service.Service, &service)
+			ros.storeMessage(ServiceCallOp, service.Service, service.Id, &service)
 		case "service_response":
 			var service ServiceResponse
 			json.Unmarshal(msg, &service)
-			ros.storeMessage(ServiceResponseOp, service.Service, &service)
+			ros.storeMessage(ServiceResponseOp, service.Service, service.Id, &service)
 		case "subscribe":
 		case "unsubscribe":
 		default:
@@ -130,26 +130,26 @@ func (ros *Ros) onConnect() error {
 	return nil
 }
 
-func (ros *Ros) createMessage(op string, name string) {
+func (ros *Ros) createMessage(op string, name string, id string) {
 	ch := make(chan interface{})
 	ros.message.mutex.Lock()
-	ros.message.message[op+":"+name] = ch
+	ros.message.message[op+":"+name+id] = ch
 	ros.message.mutex.Unlock()
 }
 
-func (ros *Ros) destroyMessage(op string, name string) {
+func (ros *Ros) destroyMessage(op string, name string, id string) {
 	ros.message.mutex.Lock()
-	close(ros.message.message[op+":"+name])
+	close(ros.message.message[op+":"+name+id])
 	ros.message.mutex.Unlock()
 }
 
-func (ros *Ros) storeMessage(op string, name string, value interface{}) {
+func (ros *Ros) storeMessage(op string, name string, id string, value interface{}) {
 	ros.message.mutex.Lock()
-	ros.message.message[op+":"+name] <- value
+	ros.message.message[op+":"+name+id] <- value
 	ros.message.mutex.Unlock()
 }
 
-func (ros *Ros) retrieveMessage(op string, name string) (interface{}, bool) {
-	v, ok := <-ros.message.message[op+":"+name]
+func (ros *Ros) retrieveMessage(ch chan interface{}) (interface{}, bool) {
+	v, ok := <-ch
 	return v, ok
 }

@@ -87,19 +87,20 @@ func (topic *Topic) Publish(data json.RawMessage) error {
 }
 
 func (topic *Topic) Subscribe(callback TopicCallback) error {
-	err := topic.subscribe()
+	sub, err := topic.subscribe()
 	if err != nil {
 		return err
 	}
 	go func() {
 		ros := topic.ros
-		ros.createMessage(PublishOp, topic.name)
-		defer ros.destroyMessage(PublishOp, topic.name)
+		ros.createMessage(PublishOp, topic.name, sub.Id)
+		ch := ros.message.message[ServiceResponseOp+":"+topic.name+sub.Id]
+		defer ros.destroyMessage(PublishOp, topic.name, sub.Id)
 		for {
-			v, ok := ros.retrieveMessage(PublishOp, topic.name)
+			v, ok := ros.retrieveMessage(ch)
 			if !ok {
 				topic.subscribe()
-				ros.createMessage(PublishOp, topic.name)
+				ros.createMessage(PublishOp, topic.name, sub.Id)
 			} else {
 				callback((v).(*PublishMessage).Msg)
 			}
@@ -118,14 +119,14 @@ func (topic *Topic) Unsubscribe() error {
 	return err
 }
 
-func (topic *Topic) subscribe() error {
+func (topic *Topic) subscribe() (SubscribeMessage, error) {
 	id := fmt.Sprintf("%s:%s:%d", SubscribeOp, topic.name, topic.ros.incCounter())
 	msg := SubscribeMessage{Op: SubscribeOp, Id: id, Topic: topic.name, Type: topic.messageType}
 	err := topic.ros.ws.writeJSON(msg)
 	if err == nil {
 		topic.isSubscribing = true
 	}
-	return err
+	return msg, err
 }
 
 func (topic *Topic) Advertise() error {
@@ -157,7 +158,8 @@ func (topic *Topic) Unadvertise() error {
 func (topic *Topic) onConnected() {
 	if topic.isSubscribing {
 		// close subscribe chan if connection is (re)established.
-		topic.ros.destroyMessage(PublishOp, topic.name)
+		// TODO will not use subscribe of this lib,so set ""
+		topic.ros.destroyMessage(PublishOp, topic.name, "")
 	}
 	if topic.isAdvertised {
 		topic.isAdvertised = false
