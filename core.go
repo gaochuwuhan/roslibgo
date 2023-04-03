@@ -2,14 +2,17 @@ package roslibgo
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/otamajakusi/recws"
+	"strings"
+
 	// "golang.org/x/net/websocket"
 	"sync"
 	"time"
 )
 
-var ErrNotConnected = recws.ErrNotConnected
+var ErrNotConnected = errors.New("")
 
 type RosMessage struct {
 	message map[string]chan interface{}
@@ -37,13 +40,19 @@ type Base struct {
 
 func (rosWs *RosWs) readMessage() ([]byte, error) {
 	_, msg, err := rosWs.ws.ReadMessage()
+	if strings.Contains(err.Error(), "websocket") {
+		err = errors.New(strings.ReplaceAll(err.Error(), "websocket", "rosbridge websocket"))
+	}
 	return msg, err
 }
 
 func (rosWs *RosWs) writeJSON(msg interface{}) error {
 	err := rosWs.ws.WriteJSON(msg)
 	if err != nil {
-		fmt.Printf("writeJson %v\n", err)
+		fmt.Printf("writeJson to rosbridge: %v\n", err)
+	}
+	if strings.Contains(err.Error(), "websocket") {
+		err = errors.New(strings.ReplaceAll(err.Error(), "websocket", "rosbridge websocket"))
 	}
 	return err
 }
@@ -91,8 +100,8 @@ func (ros *Ros) RunForever() {
 	for {
 		err := recv()
 		if err != nil {
-			fmt.Printf("RunForever: error %v\n", err)
-			time.Sleep(time.Second * 1) // TODO: should be configurable
+			fmt.Printf("roslibgo RunForever: error %v\n", err)
+			time.Sleep(time.Second * 5) // TODO: should be configurable
 		}
 	}
 }
