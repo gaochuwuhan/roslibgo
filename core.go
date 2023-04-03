@@ -40,8 +40,10 @@ type Base struct {
 
 func (rosWs *RosWs) readMessage() ([]byte, error) {
 	_, msg, err := rosWs.ws.ReadMessage()
-	if strings.Contains(err.Error(), "websocket") {
-		err = errors.New(strings.ReplaceAll(err.Error(), "websocket", "rosbridge websocket"))
+	if err != nil {
+		if strings.Contains(err.Error(), "websocket") {
+			err = errors.New(strings.ReplaceAll(err.Error(), "websocket", "rosbridge websocket"))
+		}
 	}
 	return msg, err
 }
@@ -49,10 +51,10 @@ func (rosWs *RosWs) readMessage() ([]byte, error) {
 func (rosWs *RosWs) writeJSON(msg interface{}) error {
 	err := rosWs.ws.WriteJSON(msg)
 	if err != nil {
+		if strings.Contains(err.Error(), "websocket") {
+			err = errors.New(strings.ReplaceAll(err.Error(), "websocket", "rosbridge websocket"))
+		}
 		fmt.Printf("writeJson to rosbridge: %v\n", err)
-	}
-	if strings.Contains(err.Error(), "websocket") {
-		err = errors.New(strings.ReplaceAll(err.Error(), "websocket", "rosbridge websocket"))
 	}
 	return err
 }
