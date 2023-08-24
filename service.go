@@ -15,6 +15,8 @@ type Service struct {
 // https://github.com/biobotus/rosbridge_suite/blob/master/ROSBRIDGE_PROTOCOL.md#346-call-service
 const ServiceCallOp = "call_service"
 
+var ServiceCallTimeout = func(name string, id string) error { return fmt.Errorf("[%s]call %s get response timeout", id, name) }
+
 type ServiceCall struct {
 	Op           string          `json:"op"`
 	Id           string          `json:"id,omitempty"`
@@ -71,8 +73,15 @@ func (service *Service) Call(request json.RawMessage) (json.RawMessage, bool, er
 	ros.message.mutex.Lock()
 	ch := ros.message.message[ServiceResponseOp+":"+service.name+srv.Id]
 	ros.message.mutex.Unlock()
-	v, _ := ros.retrieveMessage(ch)
-	return v.(*ServiceResponse).Values, v.(*ServiceResponse).Result, nil
+	v, ok := ros.retrieveMessage(ch)
+	if !ok {
+		return []byte("null"), false, ServiceCallTimeout(service.name, srv.Id)
+	}
+	val, ok := v.(*ServiceResponse)
+	if !ok {
+		return []byte("null"), false, ServiceCallTimeout(service.name, srv.Id)
+	}
+	return val.Values, val.Result, nil
 }
 
 func (service *Service) Advertise(callback ServiceCallback) error {

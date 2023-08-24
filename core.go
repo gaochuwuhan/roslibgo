@@ -161,6 +161,12 @@ func (ros *Ros) storeMessage(op string, name string, id string, value interface{
 }
 
 func (ros *Ros) retrieveMessage(ch chan interface{}) (interface{}, bool) {
-	v, ok := <-ch
-	return v, ok
+	for {
+		select {
+		case v := <-ch:
+			return v, true
+		case <-time.After(time.Second * 5):
+			return nil, false
+		}
+	}
 }
