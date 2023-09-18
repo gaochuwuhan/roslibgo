@@ -150,22 +150,31 @@ func (ros *Ros) createMessage(op string, name string, id string) {
 
 func (ros *Ros) destroyMessage(op string, name string, id string) {
 	ros.message.mutex.Lock()
-	close(ros.message.message[op+":"+name+id])
+	ch, ok := ros.message.message[op+":"+name+id]
+	if ok {
+		close(ch)
+		delete(ros.message.message, op+":"+name+id)
+	}
 	ros.message.mutex.Unlock()
 }
 
 func (ros *Ros) storeMessage(op string, name string, id string, value interface{}) {
 	ros.message.mutex.Lock()
-	ros.message.message[op+":"+name+id] <- value
+	_, ok := ros.message.message[op+":"+name+id]
+	if ok {
+		ros.message.message[op+":"+name+id] <- value
+	}
 	ros.message.mutex.Unlock()
 }
 
 func (ros *Ros) retrieveMessage(ch chan interface{}) (interface{}, bool) {
+	timer := time.NewTimer(time.Second * 5)
+	defer timer.Stop()
 	for {
 		select {
 		case v := <-ch:
 			return v, true
-		case <-time.After(time.Second * 5):
+		case <-timer.C:
 			return nil, false
 		}
 	}
